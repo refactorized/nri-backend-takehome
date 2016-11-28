@@ -25,6 +25,7 @@
     "ramda": "^0.22.1"
   },
   "devDependencies": {
+    "require-nocache": "^1.0.0",
     "standard": "^8.6.0"
   }
 }

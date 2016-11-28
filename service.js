@@ -3,6 +3,8 @@
 
 const fs = require('fs')
 const parse = require('csv-parse/lib/sync')
+const r = require('ramda')
+
 const cfg = {
   parser: {
     columns: true,
@@ -15,4 +17,18 @@ const cfg = {
 const Questions = parse(fs.readFileSync('./questions.csv'), cfg.parser)
 const Usage = parse(fs.readFileSync('./usage.csv'), cfg.parser)
 
-module.exports = { Questions, Usage }
+var strands = r.uniq(r.map(q => q.strand_id)(Questions))
+var strandsMap = r.groupBy(q => q.strand_id)(Questions)
+
+const roundRobin = arr => i => arr[i % array.length]
+
+console.dir(Questions)
+
+funciton getQuestions = (n) =>
+
+module.exports = {
+  Questions,
+  Usage,
+  strands,
+  strandsMap
+}
