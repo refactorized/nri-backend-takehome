@@ -15,43 +15,38 @@ const cfg = {
 // I capitalize collections right now, I find it a more useful convention then
 // capitalizing js constructors, maybe that will change with more es2015
 const Questions = parse(fs.readFileSync('./questions.csv'), cfg.parser)
-const Usage = parse(fs.readFileSync('./usage.csv'), cfg.parser)
+// const Usage = parse(fs.readFileSync('./usage.csv'), cfg.parser)
 
-// sets, maps and such, using var because they may change - really they should be
-// immutable functions on the Questions collection with clever caching/memoing
-var strands = r.uniq(r.map(q => q.strand_id)(Questions))
-var strandsMap = r.groupBy(q => q.strand_id)(Questions)
+// keyless groupBy
+const divy = fn => C => r.values(r.groupBy(fn)(r.values(C)))
 
-const roundRobin = arr => i => arr[i % arr.length]
+// predicate, is the thing a function?
+const isFn = fn => r.type(fn) === 'Function'
 
-// this smells really bad - we don't need it with better use of roundRobin.
-function makeIndex (list) {
-  let indicies = {}
-  for (var i = 0; i < list.length; i++) {
-    indicies[list[i]] = 0
+// recursive round robin
+const reRobin = (_arr) => {
+  let arr = r.map(r.when(r.isArrayLike, reRobin))(_arr)
+  let i = -1
+  return () => {
+    i = (i + 1) % arr.length
+    return r.when(isFn, x => x())(arr[i])
   }
-  return indicies
 }
 
+// build out heirarchical sets of questions to be round-robinned.
+var strandsMap = divy(q => q.strand_id)(Questions)
+var standardsMap = r.map(divy(q => q.standard_id))(strandsMap)
+
+// the actual service method
 function getQuestions (n) {
-  let indicies = makeIndex(strands)
-  let Qs = []
-  let strandRr = roundRobin(strands)
-  for (var i = 0; i < n; i++) {
-    let strand = strandRr(i)
-    let qI = indicies[strand]
-    // round robin questions in each strand
-    // should refactor to use roundRobin fn and avoid indicies malarky
-    indicies[strand] = (indicies[strand] + 1) % strandsMap[strand].length
-    Qs.push(strandsMap[strand][qI])
-  }
-  return Qs
+  let selector = reRobin(standardsMap)
+  return r.times(selector, n)
 }
 
 module.exports = {
-  Questions,
-  Usage,
-  strands,
-  strandsMap,
+  // Questions,
+  // Usage,
+  // strandsMap,
+  // standardsMap,
   getQuestions
 }
